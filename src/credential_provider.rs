@@ -75,16 +75,15 @@ impl ICredentialProvider_Impl for CredentialProvider {
         dwindex: u32,
     ) -> ::windows::core::Result<*mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR> {
         windbg_print(format!("CredProvider : GetFieldDescriptorAt index {} \n", dwindex).as_str());
+        let field_descriptor = unsafe {
+            CoTaskMemAlloc(std::mem::size_of::<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>())
+                as *mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR
+        };
+        if field_descriptor.is_null() {
+            return Err(E_POINTER.into());
+        }
         match dwindex {
             0 => {
-                let field_descriptor = unsafe {
-                    CoTaskMemAlloc(std::mem::size_of::<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>())
-                        as *mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR
-                };
-                if field_descriptor.is_null() {
-                    return Err(E_POINTER.into());
-                }
-
                 unsafe {
                     *field_descriptor = CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
                         dwFieldID: 0,
@@ -98,14 +97,6 @@ impl ICredentialProvider_Impl for CredentialProvider {
                 return Ok(field_descriptor);
             }
             1 => {
-                let field_descriptor = unsafe {
-                    CoTaskMemAlloc(std::mem::size_of::<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>())
-                        as *mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR
-                };
-                if field_descriptor.is_null() {
-                    return Err(E_POINTER.into());
-                }
-
                 unsafe {
                     *field_descriptor = CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
                         dwFieldID: 1,
@@ -120,14 +111,6 @@ impl ICredentialProvider_Impl for CredentialProvider {
                 return Ok(field_descriptor);
             }
             2 => {
-                let field_descriptor = unsafe {
-                    CoTaskMemAlloc(std::mem::size_of::<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>())
-                        as *mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR
-                };
-                if field_descriptor.is_null() {
-                    return Err(E_POINTER.into());
-                }
-
                 unsafe {
                     *field_descriptor = CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
                         dwFieldID: 2,
@@ -139,30 +122,19 @@ impl ICredentialProvider_Impl for CredentialProvider {
 
                 return Ok(field_descriptor);
             }
-            3 => {
-                let field_descriptor = unsafe {
-                    CoTaskMemAlloc(std::mem::size_of::<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>())
-                        as *mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR
+            3 => unsafe {
+                *field_descriptor = CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
+                    dwFieldID: 3,
+                    cpft: CPFT_PASSWORD_TEXT,
+                    pszLabel: PWSTR::from_raw(create_wide_str_ptr("Password")?),
+                    guidFieldType: CPFG_LOGON_PASSWORD,
                 };
-                if field_descriptor.is_null() {
-                    return Err(E_POINTER.into());
-                }
-
-                unsafe {
-                    *field_descriptor = CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
-                        dwFieldID: 3,
-                        cpft: CPFT_PASSWORD_TEXT,
-                        pszLabel: PWSTR::from_raw(create_wide_str_ptr("Password")?),
-                        guidFieldType: CPFG_LOGON_PASSWORD,
-                    };
-                }
-
-                return Ok(field_descriptor);
+            },
+            _ => {
+                return Err(E_INVALIDARG.into());
             }
-            _ => {}
         }
-
-        Err(E_INVALIDARG.into())
+        Ok(field_descriptor)
     }
 
     fn GetCredentialAt(
